@@ -4,17 +4,19 @@ import android.support.v7.app.AppCompatActivity;
 
 public class Earthquake extends AppCompatActivity {
 
-    private String mMagnitude;
+    private double mMagnitude;
     private String mLocation;
     private long mTimeInMilliseconds;
+    private String mWebsite;
 
-    public Earthquake(String magnitude, String location, long timeInMilliseconds) {
+    public Earthquake(double magnitude, String location, long timeInMilliseconds, String website) {
         mMagnitude = magnitude;
         mLocation = location;
         mTimeInMilliseconds = timeInMilliseconds;
+        mWebsite = website;
     }
 
-    public String getMagnitude() {
+    public double getMagnitude() {
         return mMagnitude;
     }
 
@@ -24,5 +26,9 @@ public class Earthquake extends AppCompatActivity {
 
     public long getTimeInMilliseconds() {
         return mTimeInMilliseconds;
+    }
+
+    public String getWebsite() {
+        return mWebsite;
     }
 }
