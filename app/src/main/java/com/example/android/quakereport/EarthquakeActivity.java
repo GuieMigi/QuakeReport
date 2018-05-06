@@ -15,7 +15,9 @@
  */
 package com.example.android.quakereport;
 
+import android.app.LoaderManager;
 import android.content.Intent;
+import android.content.Loader;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -23,16 +25,22 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.TextView;
+
 import java.util.ArrayList;
 
-public class EarthquakeActivity extends AppCompatActivity {
+public class EarthquakeActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<ArrayList<Earthquake>> {
 
     // Tag for the log messages.
     private static final String LOG_TAG = EarthquakeActivity.class.getName();
     //JSON response link for an USGS query
-    private static final String USGS_JSON_QUERY = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=5&limit=20";
+    private static final String USGS_JSON_QUERY = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=4&limit=50";
+    // Constant value for the earthquake loader ID. Useful when we have more loaders.
+    private static final int EARTHQUAKE_LOADER_ID = 1;
     // Adapter for the list of earthquakes.
     private EarthquakeAdapter mAdapter;
+    // TextView that is displayed when the list is empty.
+    TextView emptyStateTextView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,12 +49,17 @@ public class EarthquakeActivity extends AppCompatActivity {
 
         // Find a reference to the {@link ListView} in the layout.
         ListView earthquakeListView = findViewById(R.id.list);
+        emptyStateTextView = findViewById(R.id.empty_state_text_view);
+        earthquakeListView.setEmptyView(emptyStateTextView);
         // Create a new adapter that takes an empty list of earthquakes as input.
         mAdapter = new EarthquakeAdapter(this, new ArrayList<Earthquake>());
 
         // Set the adapter on the {@link ListView}
         // so the list can be populated in the user interface.
         earthquakeListView.setAdapter(mAdapter);
+        // Initialise the LoaderManager.
+        LoaderManager loaderManager = getLoaderManager();
+        loaderManager.initLoader(EARTHQUAKE_LOADER_ID, null, EarthquakeActivity.this);
 
         earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -59,12 +72,35 @@ public class EarthquakeActivity extends AppCompatActivity {
                 startActivity(openDetailsWesite);
             }
         });
-        // Start the AsyncTask to fetch the earthquake data
+        /* Start the AsyncTask to fetch the earthquake data
         EarthquakeAsyncTask task = new EarthquakeAsyncTask();
         task.execute(USGS_JSON_QUERY);
+        */
     }
 
-    // AsyncTask to perform the network request on a background thread, and then update the UI with the earthquakes in the response.
+    @Override
+    public Loader<ArrayList<Earthquake>> onCreateLoader(int i, Bundle bundle) {
+        return new EarthquakeLoader(EarthquakeActivity.this, USGS_JSON_QUERY);
+    }
+
+    @Override
+    public void onLoadFinished(Loader<ArrayList<Earthquake>> loader, ArrayList<Earthquake> earthquakes) {
+        // Clear the adapter of previous earthquake data
+        mAdapter.clear();
+        // If there is a valid list of Earthquakes, then add them to the adapter's
+        // data set. This will trigger the ListView to update.
+        if (earthquakes != null && !earthquakes.isEmpty()) {
+            mAdapter.addAll(earthquakes);
+        } else emptyStateTextView.setText("No earthquakes found that match your query.");
+    }
+
+    @Override
+    public void onLoaderReset(Loader<ArrayList<Earthquake>> loader) {
+        // Loader reset, so we can clear out our existing data.
+        mAdapter.clear();
+    }
+
+    /** AsyncTask to perform the network request on a background thread, and then update the UI with the earthquakes in the response.
     private class EarthquakeAsyncTask extends AsyncTask<String, Void, ArrayList<Earthquake>> {
 
         @Override
@@ -89,4 +125,5 @@ public class EarthquakeActivity extends AppCompatActivity {
             }
         }
     }
+     */
 }
