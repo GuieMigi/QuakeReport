@@ -16,8 +16,11 @@
 package com.example.android.quakereport;
 
 import android.app.LoaderManager;
+import android.content.Context;
 import android.content.Intent;
 import android.content.Loader;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -25,6 +28,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -41,6 +45,8 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
     private EarthquakeAdapter mAdapter;
     // TextView that is displayed when the list is empty.
     TextView emptyStateTextView;
+    // Variable used to check the network state.
+    NetworkInfo networkInfo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,10 +63,20 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
         // Set the adapter on the {@link ListView}
         // so the list can be populated in the user interface.
         earthquakeListView.setAdapter(mAdapter);
-        // Initialise the LoaderManager.
-        LoaderManager loaderManager = getLoaderManager();
-        loaderManager.initLoader(EARTHQUAKE_LOADER_ID, null, EarthquakeActivity.this);
 
+        ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        networkInfo = connectivityManager.getActiveNetworkInfo();
+        // If there is a network connection available get the data.
+        if (networkInfo != null && networkInfo.isConnectedOrConnecting()) {
+            // Initialise the LoaderManager.
+            LoaderManager loaderManager = getLoaderManager();
+            loaderManager.initLoader(EARTHQUAKE_LOADER_ID, null, EarthquakeActivity.this);
+        } else {
+            // If there is no network connection hide the ProgressBar and set the "No internet connection available." on the empty state TextView.
+            ProgressBar progressBar = findViewById(R.id.progress_bar);
+            progressBar.setVisibility(View.GONE);
+            emptyStateTextView.setText("No internet connection available.");
+        }
         earthquakeListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
@@ -85,13 +101,22 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
 
     @Override
     public void onLoadFinished(Loader<ArrayList<Earthquake>> loader, ArrayList<Earthquake> earthquakes) {
+
+        // Hide the ProgressBar when the background thread has finished loading the data.
+        ProgressBar progressBar = findViewById(R.id.progress_bar);
+        progressBar.setVisibility(View.GONE);
+
+        // Set empty state text to display "No earthquakes found."
+        emptyStateTextView.setText("No earthquakes found that match your query.");
+
         // Clear the adapter of previous earthquake data
         mAdapter.clear();
+
         // If there is a valid list of Earthquakes, then add them to the adapter's
         // data set. This will trigger the ListView to update.
         if (earthquakes != null && !earthquakes.isEmpty()) {
             mAdapter.addAll(earthquakes);
-        } else emptyStateTextView.setText("No earthquakes found that match your query.");
+        }
     }
 
     @Override

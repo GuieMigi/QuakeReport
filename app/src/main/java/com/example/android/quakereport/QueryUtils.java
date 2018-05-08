@@ -34,6 +34,16 @@ public final class QueryUtils {
 
     // Query the USGS dataset and return a list of Earthquake objects.
     public static ArrayList<Earthquake> getEarthquakeData(String requestUrl) {
+        /**
+         * This block of code will delay the execution of the method by 5 seconds to allow the ProgressBar to be tested.
+
+         try {
+         Thread.sleep(5000);
+         } catch (InterruptedException e) {
+         e.printStackTrace();
+         }
+         */
+
         // Create URL object
         URL url = createUrl(requestUrl);
 
