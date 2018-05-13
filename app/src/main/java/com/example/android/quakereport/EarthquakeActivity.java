@@ -19,12 +19,16 @@ import android.app.LoaderManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -38,7 +42,7 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
     // Tag for the log messages.
     private static final String LOG_TAG = EarthquakeActivity.class.getName();
     //JSON response link for an USGS query
-    private static final String USGS_JSON_QUERY = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&eventtype=earthquake&orderby=time&minmag=4&limit=50";
+    private static final String USGS_JSON_QUERY = "https://earthquake.usgs.gov/fdsnws/event/1/query";
     // Constant value for the earthquake loader ID. Useful when we have more loaders.
     private static final int EARTHQUAKE_LOADER_ID = 1;
     // Adapter for the list of earthquakes.
@@ -96,7 +100,35 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
 
     @Override
     public Loader<ArrayList<Earthquake>> onCreateLoader(int i, Bundle bundle) {
-        return new EarthquakeLoader(EarthquakeActivity.this, USGS_JSON_QUERY);
+
+        SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        // The string that holds the current saved preference for the Minimum magnitude option.
+        // getString retrieves a String value from the preferences. The second parameter is the default value for this preference.
+        String minimumMagnitude = sharedPreferences.getString(
+                getString(R.string.settings_min_magnitude_key),
+                getString(R.string.settings_min_magnitude_default));
+
+        // The string that holds the current saved preference for the Order By option.
+        // getString retrieves a String value from the preferences. The second parameter is the default value for this preference.
+        String orderBy = sharedPreferences.getString(
+                getString(R.string.settings_order_by_key),
+                getString(R.string.settings_order_by_default));
+
+        // Parse breaks apart the URI string that's passed into its parameter
+        Uri baseUri = Uri.parse(USGS_JSON_QUERY);
+
+        // buildUpon prepares the baseUri that we just parsed so we can add query parameters to it
+        Uri.Builder uriBuilder = baseUri.buildUpon();
+
+        // Append query parameter and its value. For example, the `format=geojson`
+        uriBuilder.appendQueryParameter("format", "geojson");
+        uriBuilder.appendQueryParameter("limit", "50");
+        uriBuilder.appendQueryParameter("minmag", minimumMagnitude);
+        uriBuilder.appendQueryParameter("orderby", orderBy);
+
+        // Return the completed uri https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&limit=50&minmag=minimumMagnitude&orderby=time
+        return new EarthquakeLoader(EarthquakeActivity.this, uriBuilder.toString());
     }
 
     @Override
@@ -123,6 +155,25 @@ public class EarthquakeActivity extends AppCompatActivity implements LoaderManag
     public void onLoaderReset(Loader<ArrayList<Earthquake>> loader) {
         // Loader reset, so we can clear out our existing data.
         mAdapter.clear();
+    }
+
+    @Override
+    // This method initializes the contents of the Activity's options menu.
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the Options Menu we specified in XML
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.earthquake_settings) {
+            Intent settingsIntent = new Intent(this, SettingsActivity.class);
+            startActivity(settingsIntent);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     /** AsyncTask to perform the network request on a background thread, and then update the UI with the earthquakes in the response.
